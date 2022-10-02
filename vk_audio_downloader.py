@@ -1,5 +1,6 @@
 import os
 import time
+from typing import List, Tuple
 
 import requests
 import vk_api
@@ -15,7 +16,7 @@ TEMP_AUDIO_FILE_NAME = "temp.ts"
 
 
 class MusicDownloader:
-    def __init__(self, login, password, save_dir=None):
+    def __init__(self, login: str, password: str, save_dir: str = None):
         self._vk_session = vk_api.VkApi(login=login,
                                         password=password)
         self._vk_session.auth()
@@ -23,7 +24,15 @@ class MusicDownloader:
         self.save_dir = save_dir or DEFAULT_SAVE_DIR
         self.temp_file_path = f"{self.save_dir}/{TEMP_AUDIO_FILE_NAME}"
 
-    def get_audio_by_id(self, owner_id, audio_id, verbose=False):
+    def download_audio_by_id(self, owner_id: int, audio_id: int, verbose: bool = False):
+        """Скачивает аудио по id трека
+
+        Params
+        ------
+        owner_id: ID владельца (отрицательные значения для групп)
+        audio_id: ID аудио
+        verbose: Вывод времени выполнения
+        """
         if verbose:
             start = time.time()
 
@@ -41,7 +50,7 @@ class MusicDownloader:
         if verbose:
             print(f"Done in {time.time() - start} sec")
 
-    def _get_m3u8_by_id(self, owner_id, audio_id):
+    def _get_m3u8_by_id(self, owner_id: int, audio_id: int) -> Tuple:
         """
         Params
         ------
@@ -86,14 +95,15 @@ class MusicDownloader:
 
     @staticmethod
     def _encode_aes_128(data: bytes, key: bytes) -> bytes:
-        """Декодирование из AES-128"""
+        """Декодирование из AES-128 по ключу"""
         iv = data[0:16]
         ciphered_data = data[16:]
         cipher = AES.new(key, AES.MODE_CBC, iv=iv)
         encoded = unpad(cipher.decrypt(ciphered_data), AES.block_size)
         return encoded
 
-    def _get_audio_from_m3u8(self, parsed_m3u8: list, m3u8_url: str) -> bytes:
+    def _get_audio_from_m3u8(self, parsed_m3u8: List, m3u8_url: str) -> bytes:
+        """Скачивает сегменты и собирает их в одну байт-строку"""
         downloaded_segments = []
         for segment in parsed_m3u8:
             segment_uri = m3u8_url.replace("index.m3u8", segment["name"])
@@ -109,11 +119,12 @@ class MusicDownloader:
         return b''.join(downloaded_segments)
 
     @staticmethod
-    def _write_to_file(data, path):
+    def _write_to_file(data: bytes, path: str):
         with open(path, "wb+") as f:
             f.write(data)
 
     def _write_to_mp3(self, segments_binary_data: bytes, name: str):
+        """Записывает бинарные данные в файл и конвертирует его в .mp3"""
         mp3_path = f"{self.save_dir}/{name}.mp3"
 
         self._write_to_file(data=segments_binary_data, path=self.temp_file_path)
@@ -133,7 +144,7 @@ def main():
 
     owner_id = 371745470
     audio_id = 456463164
-    downloader.get_audio_by_id(owner_id=owner_id, audio_id=audio_id, verbose=True)
+    downloader.download_audio_by_id(owner_id=owner_id, audio_id=audio_id, verbose=True)
 
 
 if __name__ == "__main__":
