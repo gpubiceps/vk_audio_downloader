@@ -42,9 +42,7 @@ class MusicDownloader:
         parsed_m3u8 = self._parse_m3u8(m3u8_data)
         segments_binary_data = self._get_audio_from_m3u8(parsed_m3u8=parsed_m3u8, m3u8_url=m3u8_url)
 
-        artist = meta_info.get("artist").replace(" ", "_")
-        title = meta_info.get("title").replace(" ", "_")
-        audio_name = f"{artist}_{title}"
+        audio_name = f"{owner_id}_{audio_id}"
         self._write_to_mp3(segments_binary_data, name=audio_name)
 
         if verbose:
@@ -138,8 +136,8 @@ class MusicDownloader:
 
 
 def main():
-    login = ""
-    password = ""
+    login = "+79217889101"
+    password = "master7tornado"
     downloader = MusicDownloader(login=login, password=password)
 
     owner_id = 371745470
