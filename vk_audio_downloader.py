@@ -136,8 +136,8 @@ class MusicDownloader:
 
 
 def main():
-    login = "+79217889101"
-    password = "master7tornado"
+    login = ""
+    password = ""
     downloader = MusicDownloader(login=login, password=password)
 
     owner_id = 371745470
