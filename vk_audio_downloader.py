@@ -24,7 +24,7 @@ class MusicDownloader:
         self.save_dir = save_dir or DEFAULT_SAVE_DIR
         self.temp_file_path = f"{self.save_dir}/{TEMP_AUDIO_FILE_NAME}"
 
-    def download_audio_by_id(self, owner_id: int, audio_id: int, verbose: bool = False):
+    def download_audio_by_id(self, owner_id: int, audio_id: int, convert_to_mp3: bool = False, verbose: bool = False):
         """Скачивает аудио по id трека
 
         Params
@@ -43,10 +43,14 @@ class MusicDownloader:
         segments_binary_data = self._get_audio_from_m3u8(parsed_m3u8=parsed_m3u8, m3u8_url=m3u8_url)
 
         audio_name = f"{owner_id}_{audio_id}"
-        self._write_to_mp3(segments_binary_data, name=audio_name)
+        if convert_to_mp3:
+            self._write_to_mp3(segments_binary_data, name=audio_name)
+        else:
+            audio_path = f"{self.save_dir}/{audio_name}.ts"
+            self._write_to_file(segments_binary_data, path=audio_path)
 
         if verbose:
-            print(f"Done in {time.time() - start} sec")
+            print(f"{audio_name} saved in {time.time() - start} sec")
 
     def _get_m3u8_by_id(self, owner_id: int, audio_id: int) -> Tuple:
         """
