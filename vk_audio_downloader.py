@@ -71,6 +71,7 @@ class MusicDownloader:
         meta_info = {
             "artist": audio_info.get("artist"),
             "title": audio_info.get("title"),
+            "duration": audio_info.get("duration"),
         }
         return data, url, meta_info
 
