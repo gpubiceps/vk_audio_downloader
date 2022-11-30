@@ -2,3 +2,5 @@
 /.ipynb_checkpoints
 /venv
 /*.ipynb
+/__pycache__
+music/
