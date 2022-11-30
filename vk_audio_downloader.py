@@ -139,6 +139,34 @@ class MusicDownloader:
             os.remove(f"{self.temp_file_path}")
             raise Exception(f"Файл {mp3_path} уже существует, задайте другое имя.")
 
+    def search(self, q: str, count: int):
+        """Поиск треков по запросу
+
+        Params
+        ------
+        q:
+            Запрос
+        count:
+            Количество треков в выдаче
+
+        Returns
+        -------
+        Список словарей с мета-информацией о треках
+        """
+        response = self._vk_audio.search(q=q, count=count)
+        return list(response)
+
+    def download_by_m3u8_url(self, m3u8_url):
+        """Загрузка и сохранение аудио по m3u8 ссылке"""
+        m3u8_data = m3u8.load(uri=m3u8_url)
+        parsed_m3u8 = self._parse_m3u8(m3u8_data)
+        segments_binary_data = self._get_audio_from_m3u8(parsed_m3u8=parsed_m3u8, m3u8_url=m3u8_url)
+
+        os.makedirs(self.save_dir, exist_ok=True)
+        audio_name = f"temp"
+        audio_path = f"{self.save_dir}/{audio_name}.ts"
+        self._write_to_file(segments_binary_data, path=audio_path)
+
 
 def main():
     login = ""
