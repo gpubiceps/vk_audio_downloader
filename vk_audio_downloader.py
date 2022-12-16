@@ -156,14 +156,13 @@ class MusicDownloader:
         response = self._vk_audio.search(q=q, count=count)
         return list(response)
 
-    def download_by_m3u8_url(self, m3u8_url):
+    def download_by_m3u8_url(self, m3u8_url, audio_name):
         """Загрузка и сохранение аудио по m3u8 ссылке"""
         m3u8_data = m3u8.load(uri=m3u8_url)
         parsed_m3u8 = self._parse_m3u8(m3u8_data)
         segments_binary_data = self._get_audio_from_m3u8(parsed_m3u8=parsed_m3u8, m3u8_url=m3u8_url)
 
         os.makedirs(self.save_dir, exist_ok=True)
-        audio_name = f"temp"
         audio_path = f"{self.save_dir}/{audio_name}.ts"
         self._write_to_file(segments_binary_data, path=audio_path)
 
