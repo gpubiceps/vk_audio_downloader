@@ -8,11 +8,15 @@ from vk_api import audio
 import m3u8
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
+from asyncio import Semaphore, gather, run, wait_for
+from aiohttp.client import ClientSession
 
 
 REQUEST_STATUS_CODE = 200
 DEFAULT_SAVE_DIR = "music/"
 TEMP_AUDIO_FILE_NAME = "temp.ts"
+MAX_TASKS = 10
+MAX_TIME = 100
 
 
 class MusicDownloader:
@@ -96,30 +100,50 @@ class MusicDownloader:
         response = requests.get(url=url)
         return response.content if response.status_code == REQUEST_STATUS_CODE else None
 
-    @staticmethod
-    def _encode_aes_128(data: bytes, key: bytes) -> bytes:
-        """Декодирование из AES-128 по ключу"""
-        iv = data[0:16]
-        ciphered_data = data[16:]
-        cipher = AES.new(key, AES.MODE_CBC, iv=iv)
-        encoded = unpad(cipher.decrypt(ciphered_data), AES.block_size)
-        return encoded
+    
+    def _get_audio_from_m3u8(self, parsed_m3u8: list, m3u8_url: str) -> bytes:
+        """Асинхронно скачивает сегменты и собирает их в одну байт-строку"""
+        downloaded_chunks = [None] * len(parsed_m3u8) # to keep chunks order
+        semaphore = Semaphore(MAX_TASKS)
 
-    def _get_audio_from_m3u8(self, parsed_m3u8: List, m3u8_url: str) -> bytes:
-        """Скачивает сегменты и собирает их в одну байт-строку"""
-        downloaded_segments = []
-        for segment in parsed_m3u8:
+        async def download():
+            tasks = []
+            async with ClientSession() as session:
+                for index, segment in enumerate(parsed_m3u8):
+                    tasks.append(
+                            wait_for(
+                                handle_segment(segment, index, session),
+                                timeout=MAX_TIME
+                                )
+                            )
+                return await gather(*tasks)
+
+        async def handle_segment(segment: dict, segment_index: int, session: ClientSession) -> None:
             segment_uri = m3u8_url.replace("index.m3u8", segment["name"])
-            audio_content = self._download_content(segment_uri)
+            content = await download_chunk(segment_uri, session)
+            if segment["key_uri"] is not None:
+                key = await download_chunk(segment["key_uri"], session)
+                content = await decode_aes_128(data=content, key=key)
 
-            if segment["key_uri"] is None:
-                downloaded_segments.append(audio_content)
-            else:
-                key = self._download_content(url=segment["key_uri"])
-                downloaded_segments.append(
-                    self._encode_aes_128(data=audio_content, key=key)
-                )
-        return b''.join(downloaded_segments)
+        async def download_chunk(url: str, session: ClientSession) -> bytes:
+            async with semaphore:
+                async with session.get(url) as res:
+                    content = await res.read()
+                    return content if res.status == REQUEST_STATUS_CODE else None
+
+        async def decode_aes_128(data: bytes, key: bytes) -> bytes:
+            """Декодирование из AES-128 по ключу"""
+            try:
+                iv = data[0:16]
+            except TypeError:
+                return bytearray()
+            ciphered_data = data[16:]
+            cipher = AES.new(key, AES.MODE_CBC, iv=iv)
+            decoded = unpad(cipher.decrypt(ciphered_data), AES.block_size)
+            return decoded
+
+        run(download())
+        return b''.join(downloaded_chunks)
 
     @staticmethod
     def _write_to_file(data: bytes, path: str):
