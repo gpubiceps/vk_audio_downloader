@@ -124,6 +124,7 @@ class MusicDownloader:
             if segment["key_uri"] is not None:
                 key = await download_chunk(segment["key_uri"], session)
                 content = await decode_aes_128(data=content, key=key)
+            downloaded_chunks[segment_index] = content
 
         async def download_chunk(url: str, session: ClientSession) -> bytes:
             async with semaphore:
