@@ -8,7 +8,7 @@ from vk_api import audio
 import m3u8
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
-from asyncio import Semaphore, run, sleep
+from asyncio import Semaphore, run
 from aiohttp.client import ClientSession
 from aiohttp.client_exceptions import ContentTypeError, ClientConnectorError
 from asyncio.exceptions import TimeoutError as AioTimeoutError
