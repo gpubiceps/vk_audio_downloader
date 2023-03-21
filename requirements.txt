@@ -3,5 +3,5 @@ pycryptodome==3.15.0
 vk==3.0
 vk-api==11.9.9
 beautifulsoup4==4.11.1
-requests=2.28.1
+requests==2.28.1
 
